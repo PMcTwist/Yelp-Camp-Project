@@ -2,9 +2,13 @@ const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
 const ejsMate = require("ejs-mate");
+const Joi = require('joi');
+const catchAsync = require("./utils/catchAsync");
+const expressError = require("./utils/ExpressError");
 const methodOverride = require("method-override");
 const Campground = require("./models/campground");
-const campground = require("./models/campground");
+const { campgroundSchema } = require("./schemas.js");
+const ExpressError = require("./utils/ExpressError");
 
 
 // Setup connection to MongoDB
@@ -34,6 +38,15 @@ app.use(express.urlencoded(true));
 app.use(methodOverride("_method"));
 
 
+const validateCampground = (req, res, next) => {
+    const { error } = campgroundSchema.validate(req.body);
+    if(error) {
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    }
+    next();
+};
+
 
 // Render Home landing page
 app.get("/", (req, res) =>{
@@ -42,10 +55,10 @@ app.get("/", (req, res) =>{
 
 // Render different pages for the campgrounds in a RESTful way
 // List an index of camps in teh database
-app.get("/campgrounds", async (req, res) => {
+app.get("/campgrounds", catchAsync(async (req, res) => {
     const campgrounds = await Campground.find({});
     res.render("campgrounds/index", { campgrounds })
-});
+}));
 
 // Add a new campground
 app.get("/campgrounds/new", (req, res) => {
@@ -53,38 +66,49 @@ app.get("/campgrounds/new", (req, res) => {
 });
 
 // Post to return new camp form too when compelte
-app.post("/campgrounds", async(req, res) => {
+app.post("/campgrounds", validateCampground, catchAsync(async (req, res) => {
     const campground = new Campground(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
-});
+}));
 
 // Show details of camp based on dynamic ID from DB
-app.get("/campgrounds/:id", async (req, res) =>{
+app.get("/campgrounds/:id", catchAsync(async (req, res) =>{
     const campground = await Campground.findById(req.params.id);
     res.render("campgrounds/show", { campground });
-});
+}));
 
 // Edit camp infos
 // GET to render the edit page for input
-app.get("/campgrounds/:id/edit", async (req, res) => {
+app.get("/campgrounds/:id/edit", catchAsync(async (req, res) => {
     const campground = await Campground.findById(req.params.id);
     res.render("campgrounds/edit", { campground });
-});
+}));
 
 // POST request for taking the input data from the form
-app.put("/campgrounds/:id", async (req, res) => {
+app.put("/campgrounds/:id", validateCampground, catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });
     res.redirect(`/campgrounds/${campground._id}`);
-});
+}));
 
 // Delete camp
-app.delete("/campgrounds/:id", async (req,res) => {
+app.delete("/campgrounds/:id", catchAsync(async (req,res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect("/campgrounds");
-});
+}));
+
+// Error Handling
+app.all('*', (req, res, next) => {
+    next(new expressError('Page Not Found..', 404))
+})
+
+app.use((err, req, res, next) => {
+    const { statusCode = 500 } = err;
+    if(!err.message) err.message = "Womp Womp, Something Went Wrong.."
+    res.status(statusCode).render('error', { err })
+})
 
 // Return a listening string when the app sucessfully goes live
 app.listen(3000, ()=> {
