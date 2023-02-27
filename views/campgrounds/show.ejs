@@ -12,12 +12,14 @@
                   <li class="list-group-item"><%= campground.description%></li>
                   <li class="list-group-item">$<%= campground.price %>/Night</li>
                 </ul>
-                <div class="card-body">
-                    <a class="card-link btn btn-info" href="/campgrounds/<%=campground._id%>/edit">Edit Camp</a>
-                    <form class="d-inline" action="/campgrounds/<%=campground.id%>?_method=DELETE" method="POST">
-                        <button class="btn btn-danger">Remove Camp</button>
-                    </form>
-                </div>
+                <% if(currentUser && campground.author.equals(currentUser._id)) { %>
+                  <div class="card-body">
+                      <a class="card-link btn btn-info" href="/campgrounds/<%=campground._id%>/edit">Edit Camp</a>
+                      <form class="d-inline" action="/campgrounds/<%=campground.id%>?_method=DELETE" method="POST">
+                          <button class="btn btn-danger">Remove Camp</button>
+                      </form>
+                  </div>
+                <% } %>
                 <div class="card-footer text-muted">
                   Placeholder
               </div>
