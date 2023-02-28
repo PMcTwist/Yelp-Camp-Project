@@ -30,7 +30,12 @@ const seedDB = async () => {
             title: `${sample(descriptors)} ${sample(places)}`,
             location: `${cities[randomCity].city}, ${cities[randomCity].state}`,
             price: randomPrice,
-            image: 'https://source.unsplash.com/collection/483251',
+            images: [
+                {
+                    url: 'https://res.cloudinary.com/dctljv6wq/image/upload/v1677602744/YelpCamp/hvuihmfqouxjhhqab91o.jpg',
+                    filename: 'YelpCamp/hvuihmfqouxjhhqab91o'
+                }
+            ],
             description: "Is Camp!"
         });
         await campground.save()
