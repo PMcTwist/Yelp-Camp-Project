@@ -6,14 +6,18 @@ const { isLoggedIn, isAuthor, validateCampground } = require('./middleware');
 
 const campground = require('../controllers/campgrounds');
 const Campground = require("../models/campground");
-const flash = require('connect-flash');
+
+// Setup cloud storage for app on cloudinary
+const { storage } = require('../cloudinary');
+const multer = require('multer');
+const upload = multer({ storage });
 
 
 
 // Render different pages for the campgrounds in a RESTful way
 router.route('/')
     .get(catchAsync(campground.index))
-    .post(isLoggedIn, validateCampground, catchAsync(campground.createCampground))
+    .post(isLoggedIn, upload.array('image', 3), validateCampground, catchAsync(campground.createCampground))
 
 // Add a new campground
 router.get("/new", isLoggedIn, campground.renderNewForm);
@@ -21,7 +25,7 @@ router.get("/new", isLoggedIn, campground.renderNewForm);
 // Camp Specific routes
 router.route('/:id')
     .get(catchAsync(campground.showCampground))
-    .put(isLoggedIn, isAuthor, validateCampground, catchAsync(campground.updateCampground))
+    .put(isLoggedIn, isAuthor, upload.array('image', 5), validateCampground, catchAsync(campground.updateCampground))
     .delete(isLoggedIn, isAuthor, catchAsync(campground.destroyCampground))
 
 // Edit camp infos
