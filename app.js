@@ -4,6 +4,8 @@ if(process.env.NODE_ENV !== 'production') {
 
 const express = require("express");
 const session = require('express-session');
+const MongoStore = require("connect-mongo");
+
 const flash = require('connect-flash');
 const mongoose = require("mongoose");
 const path = require("path");
@@ -22,11 +24,12 @@ const UserRoutes = require('./routes/users')
 const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 
+const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp'
 
 // Setup connection to MongoDB
 mongoose.set("strictQuery", true);
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+mongoose.connect(dbUrl, {
     useNewUrlParser: true,
     // useCreateIndex: true,
     useUnifiedTopology: true
@@ -51,9 +54,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 // Serve up the static folder
 app.use(express.static(path.join(__dirname, 'public')));
-//Configure session
+
+secret = process.env.SECRET || 'Thissucks';
+
 const sessionConfig = {
-    secret: 'Thissucks',
+    store: MongoStore.create({
+        mongoUrl: dbUrl,
+        secret,
+        touchAfter: 24 * 60 *60
+    }),
+    secret,
     resave: false,
     saveUninitialized: true,
     cookie: {
